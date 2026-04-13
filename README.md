@@ -1,137 +1,250 @@
 # Higgs Classification using Apache Spark
 
-## Project Overview
-This project is part of the DSAI4202 – Big Data Analysis with Machine Learning course.
+## DSAI4202 – Big Data Analysis with Machine Learning  
+**Student:** Lynn Younes (60107070)
 
-The objective is to build a scalable machine learning pipeline using Apache Spark to classify events related to the Higgs boson using large-scale data. The project demonstrates end-to-end data processing, feature engineering, and model building in a distributed environment.
+---
+
+## Project Overview
+
+This project builds a **scalable machine learning pipeline using Apache Spark** to classify particle collision events as:
+
+- **Signal (1):** Higgs boson event  
+- **Background (0):** Non-Higgs event  
+
+The goal is to demonstrate **end-to-end big data processing and machine learning** on a large-scale dataset.
 
 ---
 
 ## What is the Higgs Boson?
-The Higgs boson is a fundamental particle in physics, discovered in 2012 at CERN during experiments at the Large Hadron Collider (LHC). It is associated with the Higgs field, which gives mass to other particles.
 
-In this project, we use a dataset derived from high-energy physics experiments where:
-- Each row represents a particle collision event
-- The task is to classify whether the event corresponds to a Higgs boson signal or background noise
+The Higgs boson is a fundamental particle discovered in 2012 at CERN. It is associated with the Higgs field, which gives mass to other particles.
 
-This is a binary classification problem.
+In this dataset:
+- Each row represents a particle collision event  
+- The task is to classify whether the event contains a Higgs boson signal  
+
+---
+
+## Dataset Description
+
+- **Dataset:** HIGGS.csv  
+- **Target:** `label` (binary classification)  
+- **Total Features:** 28 numerical features  
+  - **21 low-level features:** detector measurements  
+  - **7 high-level features:** engineered physics variables  
 
 ---
 
 ## Technologies Used
-- Apache Spark (PySpark / Spark MLlib)
-- Python
-- Big Data processing techniques
-- Machine Learning pipelines
+
+- Apache Spark (PySpark / MLlib)
+- Python (NumPy, Pandas)
+- Scikit-learn
+- Matplotlib, Seaborn
 
 ---
 
-## Data Ingestion
-- Load dataset into Spark DataFrames from sources such as:
-  - CSV
-  - JSON
-  - Parquet
-- Handle schema inference and apply necessary adjustments during loading
+## Project Pipeline
+
+1. Data ingestion (Spark DataFrame)
+2. Data cleaning and preprocessing
+3. Feature engineering
+4. Exploratory Data Analysis (EDA)
+5. Model training and comparison
+6. Hyperparameter tuning
+7. Model evaluation
+8. Feature importance analysis
+9. Final model testing
+10. Overfitting analysis
 
 ---
 
-## Data Cleaning and Preprocessing
-- Handle missing values:
-  - Drop them
-  - Impute them with a suitable strategy
-  - Fill them where appropriate
-- Remove duplicates and handle outliers
-- Convert categorical variables into numerical representations:
-  - One-hot encoding
-  - Indexing
-- Standardize or normalize numerical features
-- Apply additional preprocessing such as feature scaling and transformations
+## Exploratory Data Analysis (EDA)
+
+### Key Findings
+
+- Dataset is **fairly balanced**
+- Most features are **right-skewed**
+- Strong **overlap between classes**
+- No single feature separates classes clearly
+- Some features are **highly correlated**
+
+### Feature Insights
+
+- Strong features:
+  - Mass features (`m_bb`, `m_wwbb`, `m_jjj`)
+  - Momentum features (`jet_1_pt`, etc.)
+
+- Weak features:
+  - `phi` (uniform distribution)
+  - `eta` (low impact)
 
 ---
 
-## Feature Engineering
-- Create new features using domain knowledge
-- Transform existing features
-- Select relevant features using feature selection techniques
-- Apply dimensionality reduction (e.g., PCA)
-- Improve model performance and interpretability
+## Models Compared
+
+| Model                  | Description |
+|------------------------|------------|
+| Logistic Regression    | Baseline linear model |
+| Decision Tree          | Simple nonlinear model |
+| Random Forest          | Ensemble model |
+| Gradient Boosted Trees | Boosting-based model |
 
 ---
 
-## Data Exploration and Analysis (EDA)
-- Perform statistical summaries
-- Visualize:
-  - Data distributions
-  - Correlations
-  - Trends
-- Identify patterns and relationships
-- Use insights to guide feature engineering and model selection
+## Evaluation Metrics
+
+- Accuracy  
+- Precision  
+- Recall  
+- F1-score  
+- **ROC AUC (main metric)**  
+
+### Why ROC AUC?
+
+- Evaluates performance across **all thresholds**
+- Measures **class separation ability**
+- Robust to class imbalance
+- Provides overall model quality
 
 ---
 
-## Model Selection
-- Choose appropriate machine learning algorithms based on the classification task
-- Consider scalability and distributed processing in Spark
-- Evaluate multiple candidate models, such as:
-  - Logistic Regression
-  - Decision Trees
-  - Random Forest
-  - Gradient Boosting
+## Model Performance (Validation)
+
+| Model                    | Accuracy | F1     | Precision | Recall | ROC AUC |
+|--------------------------|----------|--------|-----------|--------|---------|
+| Gradient Boosted Trees   | 0.7273   | 0.7268 | 0.7267    | 0.7273 | 0.8051  |
+| Random Forest            | 0.7099   | 0.7083 | 0.7092    | 0.7099 | 0.7830  |
+| Logistic Regression      | 0.6459   | 0.6383 | 0.6459    | 0.6459 | 0.6877  |
+| Decision Tree            | 0.6930   | 0.6920 | 0.6921    | 0.6930 | 0.6839  |
 
 ---
 
-## Model Training
-- Build Spark ML pipelines to include:
-  - Preprocessing
-  - Feature engineering
-  - Model training
-- Split dataset using:
-  - Train-test split
-  - Cross-validation (k-fold)
-- Train models using Spark MLlib
-- Perform hyperparameter tuning:
-  - Grid search
-  - Random search
+## Hyperparameter Tuning
+
+### Tuned Model (Manual GBT)
+
+| Model              | Accuracy | F1     | Precision | Recall | ROC AUC |
+|--------------------|----------|--------|-----------|--------|---------|
+| Tuned GBT (Manual) | 0.7320   | 0.7315 | 0.7315    | 0.7320 | 0.8113  |
+
+### Why Manual Tuning?
+
+- Faster than grid search  
+- Suitable for large datasets  
+- Reduces computational cost  
+- Allows controlled parameter adjustments  
 
 ---
 
-## Model Evaluation
-- Evaluate models using:
-  - Accuracy
-  - Precision
-  - Recall
-  - F1-score
-- Compare performance of different models
-- Identify issues such as:
-  - Overfitting
-  - Underfitting
+## Final Model Performance (Test Set)
+
+| Model             | Accuracy | F1     | Precision | Recall | ROC AUC |
+|-------------------|----------|--------|-----------|--------|---------|
+| Final Model (GBT) | 0.7316   | 0.7313 | 0.7312    | 0.7316 | 0.8110  |
+
+### Key Insight
+
+- Validation and test scores are very close  
+- Model shows **strong generalization**
 
 ---
 
-## Model Testing and Validation
-- Assess performance on an independent test dataset
-- Ensure the model generalizes well to unseen data
+## Feature Importance (Final Model)
+
+### Most Important Features
+
+- `m_bb`
+- `m_wwbb`
+- `m_jjj`
+- `m_jlv`
+
+### Other Important Features
+
+- `jet_1_pt`
+- `lepton_pT`
+- `m_wbb`
+- `m_jj`
+
+### Low Importance
+
+- `eta` features  
+- `phi` features  
+- `b_tag`  
 
 ---
 
-## Documentation and Reporting
-- Document:
-  - Data preprocessing steps
-  - Feature engineering methods
-  - Model selection criteria
-  - Hyperparameters used
-  - Evaluation metrics
-- Prepare reports or presentations summarizing:
-  - Analysis
-  - Insights
-  - Recommendations
+## Overfitting Analysis
+
+| Dataset     | ROC AUC |
+|------------|--------|
+| Train       | 0.8194 |
+| Validation  | 0.8113 |
+| Test        | 0.8110 |
+
+### Interpretation
+
+- Small gap → no overfitting  
+- Consistent results → good generalization  
 
 ---
 
 ## Conclusion
-This project demonstrates how Apache Spark ML can be used to analyze large-scale datasets and build scalable machine learning models in a structured and efficient manner.
+
+- **Gradient Boosted Trees is the best model**
+- Ensemble models outperform simpler models
+- Feature interactions are critical
+- Mass-based features dominate predictions
+- Final model is **stable and scalable**
 
 ---
 
-## Group Project
-Course: DSAI4202 – Big Data Analysis with Machine Learning using Apache Spark
+## Limitations
+
+- Full cross-validation not feasible  
+- Manual tuning used instead of full search  
+- Training performed on sampled dataset  
+- Some feature redundancy remains  
+
+---
+
+## Future Work
+
+- Use advanced boosting models (XGBoost, LightGBM)
+- Perform automated hyperparameter tuning
+- Train on full dataset with distributed clusters
+- Apply feature selection or PCA
+- Optimize decision threshold
+
+---
+
+## How to Run
+
+```bash
+# Start Spark
+pyspark
+
+# Run notebook or script
+```
+
+---
+
+## Project Structure
+```bash
+higgs-classifier/
+├── data/ # Dataset and processed Spark files
+├── models/ # Saved models and metrics
+├── figures/ # Plots and visualizations
+├── checkpoints/ # Intermediate checkpoints (optional)
+├── notebook.ipynb # Main analysis notebook
+├── README.md # Project documentation
+```
+
+
+---
+
+## Author
+
+**Lynn Younes**  
+DSAI4202 – Information Retrieval

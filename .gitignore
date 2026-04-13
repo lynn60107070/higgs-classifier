@@ -1,0 +1,76 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Spark / Big Data Outputs
+# =========================
+*.parquet
+*.orc
+*.csv
+*.json
+
+# Large datasets
+data/
+!data/.gitkeep
+
+# =========================
+# Model Artifacts
+# =========================
+models/
+!models/.gitkeep
+
+# =========================
+# Figures / Plots
+# =========================
+figures/
+!figures/.gitkeep
+
+# =========================
+# Logs / Checkpoints
+# =========================
+checkpoints/
+*.log
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+
+# =========================
+# Spark Temp Files
+# =========================
+spark-warehouse/
+metastore_db/
+derby.log
+
+# =========================
+# Misc
+# =========================
+*.zip
+*.tar.gz
+*.bak
