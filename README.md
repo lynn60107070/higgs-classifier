@@ -7,18 +7,23 @@
 
 ## Project Overview
 
-This project builds a **scalable machine learning pipeline using Apache Spark** to classify particle collision events as:
+This project builds a scalable machine learning pipeline using Apache Spark to classify particle collision events as:
 
-- **Signal (1):** Higgs boson event  
-- **Background (0):** Non-Higgs event  
+- Signal (1): Higgs boson event  
+- Background (0): Non-Higgs event  
 
-The goal is to demonstrate **end-to-end big data processing and machine learning** on a large-scale dataset.
+The goal is to demonstrate end-to-end big data processing and machine learning on a large-scale dataset.
 
 ---
 
 ## What is the Higgs Boson?
 
 The Higgs boson is a fundamental particle discovered in 2012 at CERN. It is associated with the Higgs field, which gives mass to other particles.
+
+Identifying Higgs events is important because:
+- It validates the Standard Model of particle physics  
+- Helps scientists understand how mass is generated  
+- Enables discovery of new physics beyond current theories  
 
 In this dataset:
 - Each row represents a particle collision event  
@@ -28,11 +33,13 @@ In this dataset:
 
 ## Dataset Description
 
-- **Dataset:** HIGGS.csv  
-- **Target:** `label` (binary classification)  
-- **Total Features:** 28 numerical features  
-  - **21 low-level features:** detector measurements  
-  - **7 high-level features:** engineered physics variables  
+- Dataset: HIGGS.csv  
+- Target: `label` (binary classification)  
+- Total Features: 28 numerical features  
+  - 21 low-level features: detector measurements  
+  - 7 high-level features: engineered physics variables  
+
+Low-level features are directly measured from detectors, while high-level features are derived by physicists to capture complex particle interactions.
 
 ---
 
@@ -42,6 +49,11 @@ In this dataset:
 - Python (NumPy, Pandas)
 - Scikit-learn
 - Matplotlib, Seaborn
+
+Apache Spark was chosen over Pandas because:
+- It supports distributed computing across multiple cores/machines  
+- It handles datasets larger than memory  
+- It uses lazy evaluation, optimizing execution only when needed  
 
 ---
 
@@ -60,25 +72,94 @@ In this dataset:
 
 ---
 
+## Pipeline Overview (Simplified)
+
+Raw CSV
+→ Spark DataFrame
+→ Cleaning
+→ Feature Engineering
+→ VectorAssembler
+→ Model Training (GBT)
+→ Evaluation (ROC AUC)
+
+---
+
+## Data Ingestion Notes
+
+- Column names were manually defined because the dataset has no header
+- Large CSV files can cause issues such as:
+  - Slow parsing
+  - High memory usage
+  - Schema inference errors
+
+---
+
+## Data Cleaning and Preprocessing
+
+- Removed duplicate rows (~278k duplicates)
+- Dropped missing values (none present, but ensured robustness)
+- Converted label to double type (required by Spark ML models)
+
+Duplicates may exist due to:
+- Data generation process in simulations
+- Data merging or replication
+
+Duplicates were removed to avoid biasing the model.
+
+If missing values existed, imputation could be used, but dropping was safe here due to data completeness.
+
+---
+
 ## Exploratory Data Analysis (EDA)
 
 ### Key Findings
 
-- Dataset is **fairly balanced**
-- Most features are **right-skewed**
-- Strong **overlap between classes**
+- Dataset is fairly balanced
+- Most features are right-skewed
+- Strong overlap between classes
 - No single feature separates classes clearly
-- Some features are **highly correlated**
+- Some features are highly correlated
 
-### Feature Insights
+### Deeper Insights
 
-- Strong features:
-  - Mass features (`m_bb`, `m_wwbb`, `m_jjj`)
-  - Momentum features (`jet_1_pt`, etc.)
+- Right-skewness indicates most values are small with extreme high-value outliers
+- Multicollinearity (feature correlation) matters because:
+  - It can affect linear models
+  - Tree models are more robust to it
 
-- Weak features:
-  - `phi` (uniform distribution)
-  - `eta` (low impact)
+Feature vs label analysis showed:
+- Slight shifts between classes
+- Heavy overlap → requires combining multiple features
+
+Most features are weakly correlated with the label because:
+- Higgs detection depends on complex interactions, not single variables
+
+---
+
+## Feature Engineering
+
+### Engineered Features
+
+- `feat_sum`: total signal strength across features
+- `feat_l2`: magnitude of feature vector
+
+These help the model by:
+- Capturing overall energy/scale of events
+- Providing aggregated signals that may not be visible in individual features
+
+### Transformations
+
+- VectorAssembler: required to convert columns into a feature vector
+- StandardScaler: used for models sensitive to scale (e.g., Logistic Regression)
+
+### PCA
+
+- Not used because tree-based models handle correlated features well
+
+PCA would be useful if:
+- Using linear models
+- Reducing dimensionality for speed
+- Handling extremely high-dimensional data
 
 ---
 
@@ -91,6 +172,21 @@ In this dataset:
 | Random Forest          | Ensemble model |
 | Gradient Boosted Trees | Boosting-based model |
 
+### Model Insights
+
+- Decision Trees:
+  - Easy to interpret but prone to overfitting
+
+- Random Forest:
+  - Reduces overfitting using multiple trees (bagging)
+
+- Gradient Boosted Trees:
+  - Builds trees sequentially to correct errors
+  - More powerful but more computationally expensive
+
+Logistic Regression performed poorly because:
+- Data relationships are highly nonlinear
+
 ---
 
 ## Evaluation Metrics
@@ -99,42 +195,46 @@ In this dataset:
 - Precision  
 - Recall  
 - F1-score  
-- **ROC AUC (main metric)**  
+- ROC AUC (main metric)  
 
 ### Why ROC AUC?
 
-- Evaluates performance across **all thresholds**
-- Measures **class separation ability**
+- Evaluates performance across all thresholds
+- Measures ranking ability of the model
 - Robust to class imbalance
-- Provides overall model quality
 
----
+ROC AUC measures how well the model separates classes:
+- 0.5 → random guessing
+- 1.0 → perfect classification
+- ~0.81 → strong separation ability
 
-## Model Performance (Validation)
+### Metric Trade-offs
 
-| Model                    | Accuracy | F1     | Precision | Recall | ROC AUC |
-|--------------------------|----------|--------|-----------|--------|---------|
-| Gradient Boosted Trees   | 0.7273   | 0.7268 | 0.7267    | 0.7273 | 0.8051  |
-| Random Forest            | 0.7099   | 0.7083 | 0.7092    | 0.7099 | 0.7830  |
-| Logistic Regression      | 0.6459   | 0.6383 | 0.6459    | 0.6459 | 0.6877  |
-| Decision Tree            | 0.6930   | 0.6920 | 0.6921    | 0.6930 | 0.6839  |
+- Accuracy can be misleading with imbalance
+- Precision = correctness of positive predictions
+- Recall = ability to find all positives
+
+Use cases:
+- Precision → avoid false positives
+- Recall → avoid false negatives
 
 ---
 
 ## Hyperparameter Tuning
 
-### Tuned Model (Manual GBT)
+### Key Parameters
 
-| Model              | Accuracy | F1     | Precision | Recall | ROC AUC |
-|--------------------|----------|--------|-----------|--------|---------|
-| Tuned GBT (Manual) | 0.7320   | 0.7315 | 0.7315    | 0.7320 | 0.8113  |
+- maxDepth → controls model complexity
+- maxIter → number of boosting iterations
+- stepSize → learning rate (controls update size)
 
-### Why Manual Tuning?
+Manual tuning was used because:
+- Full grid search is expensive on large datasets
+- Faster and more practical for big data
 
-- Faster than grid search  
-- Suitable for large datasets  
-- Reduces computational cost  
-- Allows controlled parameter adjustments  
+Cross-validation:
+- Improves robustness
+- Limited in big data due to computational cost
 
 ---
 
@@ -146,8 +246,10 @@ In this dataset:
 
 ### Key Insight
 
-- Validation and test scores are very close  
-- Model shows **strong generalization**
+- Validation and test scores are very close
+- Small gap indicates:
+  - No overfitting
+  - Good generalization
 
 ---
 
@@ -155,23 +257,19 @@ In this dataset:
 
 ### Most Important Features
 
-- `m_bb`
-- `m_wwbb`
-- `m_jjj`
-- `m_jlv`
+- m_bb
+- m_wwbb
+- m_jjj
+- m_jlv
 
-### Other Important Features
+These are dominant because:
+- They represent invariant mass relationships critical in physics
 
-- `jet_1_pt`
-- `lepton_pT`
-- `m_wbb`
-- `m_jj`
+Feature importance helps:
+- Understand model behavior
+- Identify key drivers of predictions
 
-### Low Importance
-
-- `eta` features  
-- `phi` features  
-- `b_tag`  
+Low-importance features were not removed to preserve potential interactions.
 
 ---
 
@@ -185,66 +283,135 @@ In this dataset:
 
 ### Interpretation
 
-- Small gap → no overfitting  
-- Consistent results → good generalization  
+- Small gap → no overfitting
+- Balanced performance → good bias-variance tradeoff
+
+Overfitting is detected when:
+- Training performance >> test performance
 
 ---
 
+## Spark Concepts
+
+- Distributed computing: processing data across multiple nodes
+- Lazy evaluation: Spark delays execution until an action is triggered
+- Spark MLlib vs Scikit-learn:
+  - Spark → scalable, distributed
+  - Scikit-learn → in-memory, single machine
+
+Limitations of local Spark:
+- Limited memory
+- No true cluster scaling
+
+---
+
+## Key Technical Decisions
+
+| Decision | Reason |
+|--------|------|
+| Used Apache Spark | Handles large-scale data (11M rows) with distributed computing |
+| Used ROC AUC as main metric | Threshold-independent and robust to imbalance |
+| Chose Gradient Boosted Trees | Best performance and captures nonlinear relationships |
+| Did not use PCA | Tree models handle correlated features well |
+| Used sampling for training | Reduced computational cost while preserving distribution |
+| Used manual tuning | More efficient than full grid search for large data |
+
+---
+
+## Challenges and Solutions
+
+- Large dataset size
+  → Solution: Used Spark + sampling
+
+- Computational constraints
+  → Solution: Limited grid search and used manual tuning
+
+- Feature overlap between classes
+  → Solution: Used ensemble models to capture complex patterns
+
+- Correlated features
+  → Solution: Used tree-based models instead of PCA
+
+---
+
+## Why This Problem is Challenging
+
+- No single feature clearly separates classes
+- Strong overlap between signal and background
+- Many features are weak predictors individually
+- Requires combining multiple features nonlinearly
+
+---
+
+## If More Computational Resources Were Available
+
+- Train on full 11M dataset instead of sample
+- Perform full cross-validation with larger parameter grid
+- Use distributed cluster (Spark cluster)
+- Try advanced models like XGBoost / LightGBM
+
+---
+
+
 ## Conclusion
 
-- **Gradient Boosted Trees is the best model**
+- Gradient Boosted Trees is the best model
 - Ensemble models outperform simpler models
 - Feature interactions are critical
 - Mass-based features dominate predictions
-- Final model is **stable and scalable**
+- Final model is stable and scalable
 
 ---
 
 ## Limitations
 
-- Full cross-validation not feasible  
-- Manual tuning used instead of full search  
-- Training performed on sampled dataset  
-- Some feature redundancy remains  
+- Training performed on sampled dataset
+- Limited hyperparameter tuning
+- No automated optimization
+- Feature redundancy remains
 
 ---
 
 ## Future Work
 
-- Use advanced boosting models (XGBoost, LightGBM)
-- Perform automated hyperparameter tuning
-- Train on full dataset with distributed clusters
-- Apply feature selection or PCA
-- Optimize decision threshold
+- Use XGBoost or LightGBM (better optimization, faster training)
+- Perform automated tuning (grid/random/Bayesian)
+- Train on full dataset using cluster
+- Apply feature selection
+- Optimize classification threshold
+
+If dataset becomes imbalanced:
+- Use resampling (SMOTE, undersampling)
+- Adjust class weights
 
 ---
 
-## How to Run
+## Deployment Considerations
 
-```bash
-# Start Spark
-pyspark
+- Model can be deployed via Spark pipeline
+- Threshold selection depends on use-case trade-off:
+  - Higher precision vs higher recall
 
-# Run notebook or script
-```
+Trade-offs:
+- Complex models → better performance, lower interpretability
+- Simpler models → easier to explain
 
 ---
 
-## Project Structure
-```bash
-higgs-classifier/
-├── data/ # Dataset and processed Spark files
-├── models/ # Saved models and metrics
-├── figures/ # Plots and visualizations
-├── checkpoints/ # Intermediate checkpoints (optional)
-├── notebook.ipynb # Main analysis notebook
-├── README.md # Project documentation
-```
+## Communication
 
+To non-technical audience:
+- “We built a system that can identify rare particle events with high accuracy using patterns in large-scale data.”
+
+---
+
+## Key Takeaway
+
+No single feature detects the Higgs boson. Accurate classification requires combining multiple weak signals using powerful ensemble models.
 
 ---
 
 ## Author
 
-**Lynn Younes**  
+Lynn Younes  
 DSAI4202 – Information Retrieval
